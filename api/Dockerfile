@@ -1,10 +1,9 @@
-FROM golang:1.20
+FROM golang:1.23.4
 
 WORKDIR /app
 
 COPY . .
 
-COPY ../db /app/db
 
 RUN go build -o main .
 
