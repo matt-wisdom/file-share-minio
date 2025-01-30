@@ -1,15 +1,23 @@
 services:
+  minio:
+    image: quay.io/minio/minio
+    container_name: minio_storage
+    restart: always
+    env_file: "api/.env"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server --console-address ":9001" /data
   postgres:
     image: postgres:16
     container_name: postgres_db
     restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+    env_file: "api/.env"
     ports:
 
-    
+
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -18,16 +26,12 @@ services:
   go_api:
     build: ./api
     container_name: go_api
+    env_file: "api/.env"
     depends_on:
       - postgres
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}
     ports:
       - "8080:8080"
 
 volumes:
   postgres_data:
+  minio_data:
