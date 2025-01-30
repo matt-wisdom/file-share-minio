@@ -41,10 +41,10 @@ func (dbC *dbController) deleteUserDB(userID int) error {
 	return err
 }
 
-func (dbC *dbController) createFileDB(filename, bucketId string, ownerID int) (int, error) {
+func (dbC *dbController) createFileDB(filename, objectName string, ownerID int) (int, error) {
 	var id int
 	query := "INSERT into files (file_name, object_name, owner_id) VALUES ($1, $2, $3) RETURNING file_id"
-	err := dbC.db.QueryRow(query, filename, bucketId, ownerID).Scan(&id)
+	err := dbC.db.QueryRow(query, filename, objectName, ownerID).Scan(&id)
 	return id, err
 }
 
@@ -124,4 +124,10 @@ func (dbC *dbController) getFileSharedFromUserDB(receiverID, sharerID int) ([]fi
 		files = append(files, f)
 	}
 	return files, nil
+}
+
+func getDb() *dbController {
+	var dbC dbController
+	dbC.init_db()
+	return &dbC
 }
