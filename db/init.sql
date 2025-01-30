@@ -5,12 +5,12 @@ CREATE TABLE users (
 );
 
 CREATE TABLE files (
-    file_id SERIAL PRIMARY,
+    file_id SERIAL PRIMARY KEY,
     object_name VARCHAR(64) NOT NULL,
     file_name VARCHAR(32) NOT NULL,
     owner_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(), 
-    FOREIGN KEY owner_id REFERENCES users(user_id) ON DELETE CASCADE
+    FOREIGN KEY (owner_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE file_shares (
