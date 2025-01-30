@@ -1,12 +1,12 @@
 package main
 
-type userModel struct {
+type UserModel struct {
 	user_id  int
 	username string
 	email    string
 }
 
-type fileModel struct {
+type FileModel struct {
 	file_id     int
 	object_name string
 	file_name   string
@@ -14,7 +14,7 @@ type fileModel struct {
 	created_at  string
 }
 
-type shareModel struct {
+type ShareModel struct {
 	file_id     int
 	shared_with int
 	shared_at   string
