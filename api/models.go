@@ -1,21 +1,21 @@
 package main
 
 type UserModel struct {
-	user_id  int
-	username string
-	email    string
+	UserID   int    `json:"user_id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
 }
 
 type FileModel struct {
-	file_id     int
-	object_name string
-	file_name   string
-	owner_id    int
-	created_at  string
+	FileID     int    `json:"file_id"`
+	ObjectName string `json:"object_name"`
+	FileName   string `json:"file_name"`
+	OwnerID    int    `json:"owner_id"`
+	CreatedAt  string `json:"created_at"`
 }
 
 type ShareModel struct {
-	file_id     int
-	shared_with int
-	shared_at   string
+	FileID     int    `json:"file_id"`
+	SharedWith int    `json:"shared_with"`
+	SharedAt   string `json:"shared_at"`
 }

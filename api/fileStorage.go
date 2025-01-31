@@ -75,7 +75,7 @@ func uploadFileMinio(fileName string) error {
 
 func downloadFileMinio(fileName string) error {
 	ctx := context.Background()
-	err := minioClient.FGetObject(ctx, bucketName, fileName, fileName, minio.GetObjectOptions{})
+	err := minioClient.FGetObject(ctx, bucketName, fileName, "downloads/"+fileName, minio.GetObjectOptions{})
 	if err != nil {
 		log.Printf("Failed to download %s: %v\n", fileName, err)
 		return err

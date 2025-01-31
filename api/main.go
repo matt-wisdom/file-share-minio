@@ -19,6 +19,8 @@ func main() {
 	r.Use((LoggerMiddleware()))
 
 	r.POST("/share-file", shareFileUpload)
+	r.GET("/shares", getFileShare)
+	r.GET("/download", downloadFileResumable)
 
 	r.Run(":8080")
 
