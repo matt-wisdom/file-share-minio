@@ -38,7 +38,16 @@ services:
     volumes:
       - go_cache:/go-cache  # Persist Go cache
 
-
+  # test-runner:
+  #   build:
+  #     context: ./api
+  #     dockerfile: Dockerfile.test
+  #   depends_on:
+  #     - minio
+  #   environment:
+  #     - GOCACHE=/go-cache  # Set custom Go cache directory
+  #   volumes:
+  #     - go_cache:/go-cache  # Persist Go cache
 volumes:
   postgres_data:
   minio_data:
