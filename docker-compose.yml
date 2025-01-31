@@ -29,9 +29,17 @@ services:
     env_file: "api/.env"
     depends_on:
       - postgres
+    
     ports:
       - "8080:8080"
+
+    environment:
+      - GOCACHE=/go-cache  # Set custom Go cache directory
+    volumes:
+      - go_cache:/go-cache  # Persist Go cache
+
 
 volumes:
   postgres_data:
   minio_data:
+  go_cache:
