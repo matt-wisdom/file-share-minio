@@ -113,6 +113,19 @@ func downloadFileResumable(c *gin.Context) {
 		c.JSON(400, gin.H{"message": "Invalid file id"})
 		return
 	}
+	var toUser UserModel
+	toUserID := c.Query("to_user")
+	if isEmailAddressRegex(toUserID) {
+		toUser, err = db.getUserByEmailDB(toUserID)
+	} else {
+		toUser, err = db.getUserByUsernameDB(toUserID)
+	}
+	receiverID := toUser.UserID
+	if err != nil {
+		c.JSON(400, gin.H{"message": "Invalid receiver id"})
+		return
+	}
+
 	file, err := db.getFileDB(fileId)
 	if err != nil {
 		c.JSON(404, gin.H{"message": "File not found"})
@@ -143,11 +156,13 @@ func downloadFileResumable(c *gin.Context) {
 
 	fileSize := fileInfo.Size()
 	c.Writer.Header().Set("Accept-Ranges", "bytes")
+	defer db.setSharedFile(fileId, receiverID)
 
 	rangeHeader := c.GetHeader("Range")
 	if rangeHeader == "" {
 		// c.Writer.Header().Set("Content-Length", fmt.Sprintf("%d", fileSize))
 		c.File(filePath)
+
 		return
 	}
 

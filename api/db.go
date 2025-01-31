@@ -169,7 +169,7 @@ func (dbC *dbController) getSharedFilesDB(userID int) ([]FileModel, error) {
 
 func (dbC *dbController) getFileSharedFromUserDB(receiverID, sharerID int) ([]FileModel, error) {
 	var files []FileModel
-	query := "SELECT f.file_id, f.object_name, f.file_name, f.owner_id, f.created_at FROM files f JOIN file_shares s ON f.file_id = s.file_id WHERE s.shared_with = $1 AND f.owner_id = $2"
+	query := "SELECT f.file_id, f.object_name, f.file_name, f.owner_id, f.created_at FROM files f JOIN file_shares s ON f.file_id = s.file_id WHERE s.shared_with = $1 AND f.owner_id = $2 AND s.received_at IS NULL ORDER BY s.shared_at"
 	rows, err := dbC.db.Query(query, receiverID, sharerID)
 	if err != nil {
 		return nil, err
@@ -184,6 +184,18 @@ func (dbC *dbController) getFileSharedFromUserDB(receiverID, sharerID int) ([]Fi
 		files = append(files, f)
 	}
 	return files, nil
+}
+
+func (dbC *dbController) setSharedFile(fileID, receiverID int) error {
+	file, err := dbC.getFileDB(fileID)
+	senderID := file.OwnerID
+	if file.OwnerID != senderID {
+		return err
+	}
+	query := "UPDATE file_shares SET received_at=NOW() where file_id = $1 AND shared_with = $2"
+	_, err = dbC.db.Exec(query, fileID, receiverID)
+	log.Print("setShared: ", err, "\n")
+	return err
 }
 
 func getDb() *dbController {
