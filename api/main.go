@@ -17,7 +17,7 @@ func main() {
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 
 	r.Use(LoggerMiddleware())
-	r.Use(RateLimitMiddleware())
+	// r.Use(RateLimitMiddleware())
 
 	r.POST("/share-file", shareFileUpload)
 	r.GET("/shares", getFileShare)

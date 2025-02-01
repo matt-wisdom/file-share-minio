@@ -78,7 +78,10 @@ func (dbC *dbController) createUserDB(username, email string) int {
 	var id int
 	user, err := dbC.getUserByEmailDB(email)
 	if err == nil {
-		return user.UserID
+		user, err = dbC.getUserByUsernameDB(username)
+		if err == nil {
+			return user.UserID
+		}
 	}
 	query := "INSERT into users (email, username) VALUES ($1, $2) RETURNING user_id"
 	err = dbC.db.QueryRow(query, email, username).Scan(&id)
@@ -96,10 +99,10 @@ func (dbC *dbController) deleteUserDB(userID int) error {
 	return err
 }
 
-func (dbC *dbController) createFileDB(filename, objectName string, ownerID int) (int, error) {
+func (dbC *dbController) createFileDB(filename, objectName string, ownerID int, fileSize int64) (int, error) {
 	var id int
-	query := "INSERT into files (file_name, object_name, owner_id) VALUES ($1, $2, $3) RETURNING file_id"
-	err := dbC.db.QueryRow(query, filename, objectName, ownerID).Scan(&id)
+	query := "INSERT into files (file_name, object_name, owner_id, file_size) VALUES ($1, $2, $3, $4) RETURNING file_id"
+	err := dbC.db.QueryRow(query, filename, objectName, ownerID, fileSize).Scan(&id)
 	log.Print("createFile:", err, "\n")
 	return id, err
 }
@@ -131,7 +134,7 @@ func (dbC *dbController) unshareFileDB(fileID, userID int) error {
 
 func (dbC *dbController) getUserFilesDB(userID int) ([]FileModel, error) {
 	var files []FileModel
-	query := "SELECT file_id, object_name, file_name, owner_id, created_at FROM files WHERE owner_id = $1"
+	query := "SELECT file_id, object_name, file_name, owner_id, file_size created_at FROM files WHERE owner_id = $1"
 	rows, err := dbC.db.Query(query, userID)
 	if err != nil {
 		return nil, err
@@ -139,7 +142,7 @@ func (dbC *dbController) getUserFilesDB(userID int) ([]FileModel, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var f FileModel
-		err := rows.Scan(&f.FileID, &f.ObjectName, &f.FileName, &f.OwnerID, &f.CreatedAt)
+		err := rows.Scan(&f.FileID, &f.ObjectName, &f.FileName, &f.OwnerID, &f.CreatedAt, &f.FileSize)
 		if err != nil {
 			return nil, err
 		}
@@ -169,7 +172,7 @@ func (dbC *dbController) getSharedFilesDB(userID int) ([]FileModel, error) {
 
 func (dbC *dbController) getFileSharedFromUserDB(receiverID, sharerID int) ([]FileModel, error) {
 	var files []FileModel
-	query := "SELECT f.file_id, f.object_name, f.file_name, f.owner_id, f.created_at FROM files f JOIN file_shares s ON f.file_id = s.file_id WHERE s.shared_with = $1 AND f.owner_id = $2 AND s.received_at IS NULL ORDER BY s.shared_at"
+	query := "SELECT f.file_id, f.object_name, f.file_name, f.owner_id, f.created_at, f.file_size FROM files f JOIN file_shares s ON f.file_id = s.file_id WHERE s.shared_with = $1 AND f.owner_id = $2 AND s.received_at IS NULL ORDER BY s.shared_at"
 	rows, err := dbC.db.Query(query, receiverID, sharerID)
 	if err != nil {
 		return nil, err
@@ -177,7 +180,7 @@ func (dbC *dbController) getFileSharedFromUserDB(receiverID, sharerID int) ([]Fi
 	defer rows.Close()
 	for rows.Next() {
 		var f FileModel
-		err := rows.Scan(&f.FileID, &f.ObjectName, &f.FileName, &f.OwnerID, &f.CreatedAt)
+		err := rows.Scan(&f.FileID, &f.ObjectName, &f.FileName, &f.OwnerID, &f.CreatedAt, &f.FileSize)
 		if err != nil {
 			return nil, err
 		}

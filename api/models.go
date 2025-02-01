@@ -12,6 +12,7 @@ type FileModel struct {
 	FileName   string `json:"file_name"`
 	OwnerID    int    `json:"owner_id"`
 	CreatedAt  string `json:"created_at"`
+	FileSize   int64  `json:"file_size"`
 }
 
 type ShareModel struct {

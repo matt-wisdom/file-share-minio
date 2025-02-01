@@ -80,6 +80,9 @@ func downloadFileMinio(fileName string) error {
 		log.Printf("Failed to download %s: %v\n", fileName, err)
 		return err
 	}
+	if err := os.MkdirAll("downloads", os.ModePerm); err != nil {
+		log.Printf("Failed to create downloads directory: %v\n", err)
+	}
 	log.Printf("Successfully downloaded %s\n", fileName)
 	return nil
 }

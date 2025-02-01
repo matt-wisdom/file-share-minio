@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func getFileShare(c *gin.Context) {
@@ -65,7 +66,7 @@ func shareFileUpload(c *gin.Context) {
 			c.JSON(500, gin.H{"error": "Failed to upload file"})
 			return
 		}
-
+		fileSize := file.Size
 		fileId := 0
 		for _, toUser := range toUsers {
 			toUserModel, err := db.getUserByEmailDB(toUser)
@@ -77,7 +78,9 @@ func shareFileUpload(c *gin.Context) {
 						return
 					} else {
 						username := strings.Split(toUser, "@")[0]
-						userId = db.createUserDB(username, toUser)
+						uniqueUsername := fmt.Sprintf("%s_%s", username, uuid.New().String())
+
+						userId = db.createUserDB(uniqueUsername, toUser)
 						toUserModel, err = db.getUserDB(userId)
 						if err != nil {
 							c.JSON(500, gin.H{"error": "Failed to create user"})
@@ -88,7 +91,7 @@ func shareFileUpload(c *gin.Context) {
 				}
 			}
 			if fileId == 0 {
-				fileId, err = db.createFileDB(filename, filename, userId)
+				fileId, err = db.createFileDB(filename, filename, userId, fileSize)
 				if err != nil {
 					c.JSON(500, gin.H{"error": "Failed to save file to database"})
 					return
@@ -99,7 +102,7 @@ func shareFileUpload(c *gin.Context) {
 				c.JSON(500, gin.H{"error": "Failed to share file"})
 				return
 			}
-			output["shares"] = append(output["shares"].([]interface{}), gin.H{"file_id": fileId, "shared_with": toUserModel.UserID, "shared_at": time.Now().Format("2006-01-02 15:04:05")})
+			output["shares"] = append(output["shares"].([]interface{}), gin.H{"filename": filename, "file_size": fileSize, "file_id": fileId, "shared_with": toUserModel.UserID, "shared_at": time.Now().Format("2006-01-02 15:04:05")})
 		}
 
 	}
@@ -131,6 +134,10 @@ func downloadFileResumable(c *gin.Context) {
 		c.JSON(404, gin.H{"message": "File not found"})
 		return
 	}
+	// _, err = db.getFileSharedFromUserWithIDDB(toUser.UserID, file.OwnerID, file.FileID)
+	// if err != nil {
+	// 	return
+	// }
 	filePath := "downloads/" + file.ObjectName
 
 	_, err = os.Stat(filePath)
@@ -138,7 +145,8 @@ func downloadFileResumable(c *gin.Context) {
 		err = downloadFileMinio(file.ObjectName)
 	}
 	if err != nil {
-		c.JSON(500, gin.H{"message": "Could not get object"})
+		fmt.Printf("\n\nYoooo: %v\n\n\n", err)
+		c.JSON(500, gin.H{"message": fmt.Sprintf("Could not get object %v", err)})
 		return
 	}
 	fileObj, err := os.Open(filePath)
@@ -156,12 +164,11 @@ func downloadFileResumable(c *gin.Context) {
 
 	fileSize := fileInfo.Size()
 	c.Writer.Header().Set("Accept-Ranges", "bytes")
-	defer db.setSharedFile(fileId, receiverID)
-
 	rangeHeader := c.GetHeader("Range")
 	if rangeHeader == "" {
 		// c.Writer.Header().Set("Content-Length", fmt.Sprintf("%d", fileSize))
 		c.File(filePath)
+		db.setSharedFile(fileId, receiverID)
 
 		return
 	}
@@ -175,7 +182,9 @@ func downloadFileResumable(c *gin.Context) {
 	rangeParts := strings.Split(byteRange[1], "-")
 	start, err := strconv.ParseInt(rangeParts[0], 10, 64)
 	if err != nil || start >= fileSize {
-		c.JSON(416, gin.H{"message": "Invalid range start"})
+		fmt.Println("Setting shared")
+		db.setSharedFile(fileId, receiverID)
+		c.JSON(204, gin.H{})
 		return
 	}
 
@@ -188,7 +197,9 @@ func downloadFileResumable(c *gin.Context) {
 	}
 
 	if start > end {
-		c.JSON(416, gin.H{"error": "Invalid range"})
+		fmt.Println("Setting shared")
+		db.setSharedFile(fileId, receiverID)
+		c.JSON(204, gin.H{})
 		return
 	}
 
@@ -225,8 +236,10 @@ func downloadFileResumable(c *gin.Context) {
 			c.Writer.Flush()
 			bytesRemaining -= int64(readBytes)
 		}
-
+		fmt.Printf("Bytes re: %d\n", bytesRemaining)
 		if err == io.EOF {
+			fmt.Println("Setting shared")
+			db.setSharedFile(fileId, receiverID)
 			break // End of file reached
 		} else if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "File read error"})
